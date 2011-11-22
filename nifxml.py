@@ -347,7 +347,16 @@ class CFile(file):
         if action in [ACTION_READ, ACTION_WRITE, ACTION_OUT]:
             block.members.reverse() # calculated data depends on data further down the structure
             for y in block.members:
-                if not y.is_duplicate and not y.is_manual_update and action in [ACTION_WRITE, ACTION_OUT]:
+                    
+                # is manual update, Bit 1=Read, Bit 2=Write, Bit 3=Out
+                if y.is_manual_update:
+                    print "Found manual update for:", y.cname, action
+                    if action == ACTION_OUT: continue
+                    if action == ACTION_WRITE and (int(y.is_manual_update) & 1 != 0): continue
+                    if action == ACTION_READ and (int(y.is_manual_update) & 2 != 0): continue
+                    print "Executing manual update for:", y.cname, action
+                
+                if not y.is_duplicate and action in [ACTION_WRITE, ACTION_OUT]:
                   if y.func:
                       self.code('%s%s = %s%s();'%(prefix, y.cname, prefix, y.func))
                   elif y.is_calculated:
@@ -384,6 +393,14 @@ class CFile(file):
                 subblock = enum_types[y.type]
             elif y.type in flag_types:
                 subblock = flag_types[y.type]
+                
+            # is manual update, Bit 1=Read, Bit 2=Write, Bit 3=Out
+            if y.is_manual_update:
+                print "Found manual update for:", y.cname, y.is_manual_update, int(y.is_manual_update), action
+                if action == ACTION_OUT: continue
+                if action == ACTION_WRITE and (int(y.is_manual_update) & 1 != 0): continue
+                if action == ACTION_READ and (int(y.is_manual_update) & 2 != 0): continue
+                print "Executing manual update for:", y.cname, action
                 
             # check for links
             if action in [ACTION_FIXLINKS, ACTION_GETREFS, ACTION_GETPTRS]:
@@ -1203,8 +1220,8 @@ class Member:
     @type ccond_ref: string
     @ivar next_dup: Next duplicate member
     @type next_dup: Member
-    @ivar is_manual_update: True if the member value is manually updated by the code
-    @type is_manual_update: bool
+    @ivar is_manual_update: if the member value is manually updated by the code (flags: 1:Write, 2:Read)
+    @type is_manual_update: int
     """
     def __init__(self, element):
         """
@@ -1238,7 +1255,7 @@ class Member:
         self.vercond   = Expr(element.getAttribute('vercond'))
         self.is_public = (element.getAttribute('public') == "1")  
         self.next_dup  = None
-        self.is_manual_update = False
+        self.is_manual_update = element.getAttribute('is_manual_update') 
         self.is_calculated = (element.getAttribute('calculated') == "1")
 
         #Get description from text between start and end tags
