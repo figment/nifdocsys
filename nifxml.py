@@ -350,11 +350,9 @@ class CFile(file):
                     
                 # is manual update, Bit 1=Read, Bit 2=Write, Bit 3=Out
                 if y.is_manual_update:
-                    print "Found manual update for:", y.cname, action
                     if action == ACTION_OUT: continue
                     if action == ACTION_WRITE and (int(y.is_manual_update) & 1 != 0): continue
                     if action == ACTION_READ and (int(y.is_manual_update) & 2 != 0): continue
-                    print "Executing manual update for:", y.cname, action
                 
                 if not y.is_duplicate and action in [ACTION_WRITE, ACTION_OUT]:
                   if y.func:
@@ -396,11 +394,9 @@ class CFile(file):
                 
             # is manual update, Bit 1=Read, Bit 2=Write, Bit 3=Out
             if y.is_manual_update:
-                print "Found manual update for:", y.cname, y.is_manual_update, int(y.is_manual_update), action
                 if action == ACTION_OUT: continue
                 if action == ACTION_WRITE and (int(y.is_manual_update) & 1 != 0): continue
                 if action == ACTION_READ and (int(y.is_manual_update) & 2 != 0): continue
-                print "Executing manual update for:", y.cname, action
                 
             # check for links
             if action in [ACTION_FIXLINKS, ACTION_GETREFS, ACTION_GETPTRS]:
