@@ -423,9 +423,9 @@ class CFile(file):
                     if not y_cond_lmember:
                        if y.cond.lhs == z.name:
                           y_cond_lmember = z
-                       elif y.cond.op == '&&' and y.cond.lhs.lhs == z.name:
+                       elif y.cond.op == '&&' and y.cond.lhs == z.name:
                           y_cond_lmember = z
-                       elif y.cond.op == '||' and y.cond.lhs.lhs == z.name:
+                       elif y.cond.op == '||' and y.cond.lhs == z.name:
                           y_cond_lmember = z
                     if not y_arg and y.arg == z.name:
                         y_arg = z
@@ -1066,12 +1066,16 @@ class Expression(object):
             if not self.lhs: return ''
             if isinstance(self.lhs, types.IntType):
                 return self.lhs               
+            elif self.lhs in block_types:
+                return 'IsDerivedType(%s::TYPE)' % self.lhs
             else:
                 return prefix + (name_filter(self.lhs) if name_filter else self.lhs)
         elif self._op == '!':
             lhs = self.lhs
             if isinstance(lhs, Expression):
                 lhs = lhs.code(prefix, True, name_filter)
+            elif lhs in block_types:
+                lhs = 'IsDerivedType(%s::TYPE)' % lhs
             elif lhs and not lhs.isdigit() and not lhs.startswith('0x'):
                 lhs = prefix + (name_filter(lhs) if name_filter else lhs)
             return '%s%s%s%s'%(lbracket, self._op, lhs, rbracket)
@@ -1080,13 +1084,30 @@ class Expression(object):
             rhs = self.rhs
             if isinstance(lhs, Expression):
                 lhs = lhs.code(prefix, True, name_filter)
+            elif lhs in block_types:
+                lhs = 'IsDerivedType(%s::TYPE)' % lhs
             elif lhs and not lhs.isdigit() and not lhs.startswith('0x'):
                 lhs = prefix + (name_filter(lhs) if name_filter else lhs)
             if isinstance(rhs, Expression):
                 rhs = rhs.code(prefix, True, name_filter)
+            elif rhs in block_types:
+                rhs = 'IsDerivedType(%s::TYPE)' % rhs
             elif rhs and not rhs.isdigit() and not rhs.startswith('0x'):
                 rhs = prefix + (name_filter(rhs) if name_filter else rhs)
             return '%s%s %s %s%s'%(lbracket, lhs, self._op, rhs, rbracket)
+
+    def get_terminals(self):
+        """Return all terminal names (without operators or brackets)."""
+        if isinstance(self.lhs, Expression):
+            for terminal in self.lhs.get_terminals():
+                yield terminal
+        elif self.lhs:
+            yield self.lhs
+        if isinstance(self.rhs, Expression):
+            for terminal in self.rhs.get_terminals():
+                yield terminal
+        elif self.rhs:
+            yield self.rhs
         
     def __getattr__(self, name):
         if (name == 'lhs'):
@@ -1150,7 +1171,7 @@ class Option:
             self.description = element.firstChild.nodeValue.strip()
         else:
             self.description = self.name
-        self.cname = self.name.upper().replace(" ", "_")
+        self.cname = self.name.upper().replace(" ", "_").replace("-", "_").replace("/", "_").replace("=", "_")
 
 class Member:
     """
@@ -1655,7 +1676,10 @@ class Compound(Basic):
             if y.type in compound_names:
                 subblock = compound_types[y.type]
                 result += subblock.code_include_cpp(True, gen_dir, obj_dir)
-        for file_name in used_blocks:
+            for terminal in y.cond.get_terminals():
+                if terminal in block_types:
+                    used_blocks.append("%s%s.h"%(obj_dir, terminal))
+        for file_name in sorted(set(used_blocks)):
             result += '#include "%s"\n'%file_name
 
         return result

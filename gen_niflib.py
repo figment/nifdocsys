@@ -91,7 +91,7 @@ for i in sys.argv:
 
     
 # Fix known manual update attributes. For now hard code here.
-block_types["NiKeyframeData"].find_member("Num Rotation Keys").is_manual_update = True
+#block_types["NiKeyframeData"].find_member("Num Rotation Keys").is_manual_update = 1
 #block_types["NiTriStripsData"].find_member("Num Triangles").is_manual_update = True
 
 #
@@ -366,6 +366,7 @@ for n in compound_names:
             cpp.code()
             cpp.code( '//Fill out and return NifInfo structure.' )
             cpp.code( 'info.userVersion = userVersion;' )
+            cpp.code( 'info.userVersion2 = userVersion2;' )
             cpp.code( 'info.endian = EndianType(endianType);' )
             cpp.code( 'info.creator = exportInfo.creator.str;' )
             cpp.code( 'info.exportInfo1 = exportInfo.exportInfo1.str;' )
