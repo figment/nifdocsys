@@ -1109,6 +1109,19 @@ class Expression(object):
         elif self.rhs:
             yield self.rhs
         
+    def get_terminals(self):
+        """Return all terminal names (without operators or brackets)."""
+        if isinstance(self.lhs, Expression):
+            for terminal in self.lhs.get_terminals():
+                yield terminal
+        elif self.lhs:
+            yield self.lhs
+        if isinstance(self.rhs, Expression):
+            for terminal in self.rhs.get_terminals():
+                yield terminal
+        elif self.rhs:
+            yield self.rhs
+        
     def __getattr__(self, name):
         if (name == 'lhs'):
             return getattr(self, '_left')
@@ -1116,7 +1129,7 @@ class Expression(object):
             return getattr(self, '_right')
         if (name == 'op'):
             return getattr(self, '_op')
-        return Object.__getattribute__(self, name)
+        return object.__getattribute__(self, name)
         
 class Expr(Expression):
     """
