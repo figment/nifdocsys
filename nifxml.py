@@ -358,7 +358,10 @@ class CFile(file):
                   if y.func:
                       self.code('%s%s = %s%s();'%(prefix, y.cname, prefix, y.func))
                   elif y.is_calculated:
-                      self.code('%s%s = %s%sCalc();'%(prefix, y.cname, prefix, y.cname))
+                      if action in [ACTION_READ, ACTION_WRITE]:
+                          self.code('%s%s = %s%sCalc(info);'%(prefix, y.cname, prefix, y.cname))
+                      # ACTION_OUT is in asString(), which doesn't take version info
+                      # so let's simply not print the field in this case
                   elif y.arr1_ref:
                     if not y.arr1 or not y.arr1.lhs: # Simple Scalar
                       cref = block.find_member(y.arr1_ref[0], True) 
@@ -936,10 +939,10 @@ class Expression(object):
                 return "0x%08X"%(version2number(expr_str))
             elif iver.match(expr_str):
                 return str(int(expr_str))
-            return name_filter(expr_str) if name_filter else expr_str
-        # failed, so return the string, passed through the name filter
         except ValueError:
-            return name_filter(expr_str) if name_filter else expr_str
+            pass
+        # failed, so return the string, passed through the name filter
+        return name_filter(expr_str) if name_filter else expr_str
 
     @classmethod
     def _partition(cls, expr_str):
@@ -1130,6 +1133,10 @@ class Expression(object):
         if (name == 'op'):
             return getattr(self, '_op')
         return object.__getattribute__(self, name)
+        
+    # ducktyping: pretend we're also a string with isdigit() method
+    def isdigit(self):
+        return False
         
 class Expr(Expression):
     """
@@ -1399,6 +1406,8 @@ class Member:
             if not self.arr1 or not self.arr1.lhs: # Simple Scalar
               keyword = "mutable "
           elif self.arr2_ref: # 1-dimensional dynamic array
+              keyword = "mutable "
+          elif self.is_calculated:
               keyword = "mutable "
                   
         if self.ctemplate:
