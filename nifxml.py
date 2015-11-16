@@ -84,6 +84,10 @@ POSSIBILITY OF SUCH DAMAGE.
 
 @var ACTION_GETPTRS: Constant for use with CFile::stream.  Causes it to generate Niflib's GetPtrs function.
 @type ACTION_GETPTRS: C{int}
+
+@var ACTION_010TEMPL: Output in 010 Template format
+@type ACTION_010TEMPL: C{int}
+
 """
 
 from xml.dom.minidom import *
@@ -120,6 +124,7 @@ ACTION_OUT = 2
 ACTION_FIXLINKS = 3
 ACTION_GETREFS = 4
 ACTION_GETPTRS = 5
+ACTION_010TEMPL = 6
 
 #
 # HTML Template class
@@ -682,7 +687,7 @@ def class_name(n):
     try:
         return native_types[n]
     except KeyError:
-        return n.replace(' ', '_')
+        return n.replace(' ', '_').replace(":", "_")
 
     if n == None: return None
     try:
@@ -1191,7 +1196,7 @@ class Option:
             self.description = element.firstChild.nodeValue.strip()
         else:
             self.description = self.name
-        self.cname = self.name.upper().replace(" ", "_").replace("-", "_").replace("/", "_").replace("=", "_")
+        self.cname = self.name.upper().replace(" ", "_").replace("-", "_").replace("/", "_").replace("=", "_").replace(":", "_")
 
 class Member:
     """
