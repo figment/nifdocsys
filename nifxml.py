@@ -456,10 +456,24 @@ class CFile(file):
                 y.arr2.lhs = arg_member.name
                 y.arr2.clhs = arg_member.cname
                 y_arr2_prefix = arg_prefix
-            if y.cond and y.cond.lhs == 'ARG':
-                y.cond.lhs = arg_member.name
-                y.cond.clhs = arg_member.cname
-                y_cond_prefix = arg_prefix
+            if y.cond and y.cond.lhs and arg_member and arg_member.name:
+                def replace_arg(expr):
+                    changed = False
+                    if expr.lhs == 'ARG':
+                        expr.lhs = arg_member.name
+                        expr.clhs = arg_member.cname
+                        changed = True
+                    if expr.rhs == 'ARG':
+                        expr.rhs = arg_member.name
+                        expr.crhs = arg_member.cname
+                        changed = True
+                    if isinstance(expr.lhs, Expression):
+                        changed = replace_arg(expr.lhs) or changed
+                    if isinstance(expr.rhs, Expression):
+                        changed = replace_arg(expr.rhs) or changed
+                    return changed
+                if replace_arg(y.cond):
+                    y_cond_prefix = arg_prefix
             # conditioning
             y_cond = y.cond.code(y_cond_prefix)
             y_vercond = y.vercond.code('info.')
@@ -1138,7 +1152,16 @@ class Expression(object):
         if (name == 'op'):
             return getattr(self, '_op')
         return object.__getattribute__(self, name)
-        
+
+    def __setattr__(self, name, value):
+        if (name == 'lhs'):
+            return setattr(self, '_left', value)
+        if (name == 'rhs'):
+            return setattr(self, '_right', value)
+        if (name == 'op'):
+            return setattr(self, '_op', value)
+        return object.__setattr__(self, name, value)
+
     # ducktyping: pretend we're also a string with isdigit() method
     def isdigit(self):
         return False
