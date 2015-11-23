@@ -448,24 +448,28 @@ class CFile(file):
             # resolve this prefix
             y_prefix = prefix
             # resolve arguments
-            if y.arr1 and y.arr1.lhs == 'ARG':
-                y.arr1.lhs = arg_member.name
-                y.arr1.clhs = arg_member.cname
+            if y.arr1 and isinstance(y.arr1.lhs, basestring) and y.arr1.lhs.startswith('ARG'):
+                tmp = y.arr1.lhs[3:]
+                y.arr1.lhs = arg_member.name + tmp
+                y.arr1.clhs = arg_member.cname + tmp
                 y_arr1_prefix = arg_prefix
-            if y.arr2 and y.arr2.lhs == 'ARG':
-                y.arr2.lhs = arg_member.name
-                y.arr2.clhs = arg_member.cname
+            if y.arr2 and isinstance(y.arr2.lhs, basestring) and y.arr2.lhs.startswith('ARG'):
+                tmp = y.arr2.lhs[3:]
+                y.arr2.lhs = arg_member.name + tmp
+                y.arr2.clhs = arg_member.cname + tmp
                 y_arr2_prefix = arg_prefix
             if y.cond and y.cond.lhs and arg_member and arg_member.name:
                 def replace_arg(expr):
                     changed = False
-                    if expr.lhs == 'ARG':
-                        expr.lhs = arg_member.name
-                        expr.clhs = arg_member.cname
+                    if isinstance(expr.lhs, basestring) and expr.lhs.startswith('ARG'):
+                        tmp = expr.lhs[3:]
+                        expr.lhs = arg_member.name + tmp
+                        expr.clhs = arg_member.cname + tmp
                         changed = True
-                    if expr.rhs == 'ARG':
-                        expr.rhs = arg_member.name
-                        expr.crhs = arg_member.cname
+                    if isinstance(expr.rhs, basestring) and expr.rhs.startswith('ARG'):
+                        tmp = expr.rhs[3:]
+                        expr.rhs = arg_member.name + tmp
+                        expr.crhs = arg_member.cname + tmp
                         changed = True
                     if isinstance(expr.lhs, Expression):
                         changed = replace_arg(expr.lhs) or changed
@@ -751,7 +755,7 @@ def member_name(n):
     @rtype: string
     """
     if n == None: return None
-    if n == 'ARG': return 'ARG'
+    if n.startswith('ARG'): return n
     n2 = ''
     lower = True
     for i, c in enumerate(n):
@@ -763,6 +767,8 @@ def member_name(n):
             else:
                 n2 += c.upper()
                 lower = True
+        elif (('[' <= c) or (']' <= c)):
+            n2 += c
         else:
             n2 += '_'
             lower = True
